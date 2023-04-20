@@ -2,7 +2,7 @@ import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
 import { type NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
-
+import { Spinner, LoadingPage } from "~/components/loading";
 import { api, RouterOutputs } from "~/utils/api";
 
 import dayjs from "dayjs";
@@ -61,18 +61,29 @@ const PostView = (props: PostWithUser) => {
   )
 }
 
-const Home: NextPage = () => {
+const Feed = () => {
+  const { data, isLoading: postsLoading } = api.post.getAll.useQuery();
 
-  const user = useUser();
-
-  const { data, isLoading } = api.post.getAll.useQuery();
-
-  console.log(data)
-  
-  if (isLoading) return <div>Loading...</div>;
+  if (postsLoading) return  <div className="w-full h-full relative"><LoadingPage /></div>
 
   if (!data) return <div>Something went wrong</div>;
 
+  return (
+    <div className='flex flex-col'>
+      {data?.map((post) => <PostView {...post} key={post.post.id}/>)}
+    </div>
+  )
+}
+
+const Home: NextPage = () => {
+
+  const {user, isLoaded: userLoaded, isSignedIn} = useUser();
+  
+  //start fetching as soon as possible
+  api.post.getAll.useQuery();
+
+  if (!userLoaded) return <LoadingPage /> // TODO: add isSignedIn and return a signin page
+  
   return (
     <>
       <Head>
@@ -83,13 +94,10 @@ const Home: NextPage = () => {
       <main className="flex justify-center h-screen">
         <div className="w-full md:max-w-2xl h-full border-x border-slate-400">
           <div className='border-b border-slate-400 p-4 flex'>
-            {!user.isSignedIn && <div className="flex justify-center"><SignInButton /></div>}
-            {!!user.isSignedIn && CreatePostWizard()}
+            {!isSignedIn && <div className="flex justify-center"><SignInButton /></div>}
+            {!!isSignedIn && CreatePostWizard()}
           </div>
-          <div className='flex flex-col'>
-            {data?.map((post) => <PostView {...post} key={post.post.id}/>
-             )}
-          </div>
+          <Feed />
         </div>
       </main>
     </>

@@ -6,7 +6,6 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
 const filterUserForClient = (user: User) => {
-  console.log(`author: ${JSON.stringify(user)}`)
   return { id: user.id, profileImageUrl: user.profileImageUrl };
 }
 
