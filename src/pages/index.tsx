@@ -8,11 +8,23 @@ import { api, RouterOutputs } from "~/utils/api";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
+import { useState } from "react";
 
 dayjs.extend(relativeTime);
 
 const CreatePostWizard = () => {
   const { user } = useUser();
+
+  const [ input, setInput ] = useState('');
+
+  const ctx = api.useContext();
+
+  const { mutate, isLoading: isPosting } = api.post.create.useMutation({
+    onSuccess: async () => {
+      await ctx.post.getAll.invalidate();
+      setInput("");
+    }
+  });
 
   if (!user) return null;
 
@@ -27,10 +39,17 @@ const CreatePostWizard = () => {
           width={56}
           height={56}
         />
-        <input
-          className="bg-transparent outline outline-1 outline-slate-400 grow px-2 rounded"
-          placeholder="Say something..."
-        />
+        <div className={`flex w-full space-x-2 ${ isPosting ? 'brightness-50' : ''}`}>
+          <input
+            className={`bg-transparent outline outline-1 outline-slate-400 grow px-2 rounded`}
+            placeholder="Say something..."
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isPosting}
+          />
+          <button onClick={() => mutate({ content: input })}>Post</button>
+        </div>
       </div>
     </div>
   )
@@ -95,7 +114,7 @@ const Home: NextPage = () => {
         <div className="w-full md:max-w-2xl h-full border-x border-slate-400">
           <div className='border-b border-slate-400 p-4 flex'>
             {!isSignedIn && <div className="flex justify-center"><SignInButton /></div>}
-            {!!isSignedIn && CreatePostWizard()}
+            {!!isSignedIn && <CreatePostWizard />}
           </div>
           <Feed />
         </div>
