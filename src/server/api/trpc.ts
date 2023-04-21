@@ -28,7 +28,7 @@ type CreateContextOptions = Record<string, never>;
  *
  * @see https://trpc.io/docs/context
  */
-export const createTRPCContext = async (_opts: CreateNextContextOptions) => {
+export const createTRPCContext = (_opts: CreateNextContextOptions) => {
   const { req } = _opts;
   const sesh = getAuth(req);
   const userId = sesh.userId;
