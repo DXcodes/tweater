@@ -2,7 +2,7 @@ import type { User } from "@clerk/nextjs/dist/api";
 import { clerkClient } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-
+import dayjs from "dayjs";
 import { createTRPCRouter, privateProcedure, publicProcedure } from "~/server/api/trpc";
 
 const filterUserForClient = (user: User) => {
@@ -65,9 +65,9 @@ export const postRouter = createTRPCRouter({
     ).mutation(async ({ ctx, input }) => {
     const authorId = ctx.userId;
 
-    const { success } = await ratelimit.limit(authorId);
-
-    if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS"});
+    const limiter = await ratelimit.limit(authorId);
+    const waitCount = Math.floor((limiter.reset - Date.now())/1000);
+    if (!limiter.success) throw new TRPCError({ message: `Wait ${waitCount} seconds` , code: "TOO_MANY_REQUESTS"});
 
     const post = await ctx.prisma.post.create({
       data: {

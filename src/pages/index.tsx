@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 
 dayjs.extend(relativeTime);
 
@@ -23,6 +24,13 @@ const CreatePostWizard = () => {
     onSuccess: async () => {
       await ctx.post.getAll.invalidate();
       setInput("");
+    },
+    onError: async (e) => {
+      if (e.message) {
+        toast.error(e.message);
+      } else {
+        toast.error("Failed to post! Please try again later.");
+      }
     }
   });
 
@@ -46,9 +54,25 @@ const CreatePostWizard = () => {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={
+              (e) => {
+                if (e.key === "Enter") {
+                  if (input !== "") {
+                    mutate({ content: input })
+                  }
+                }
+              }
+            }
             disabled={isPosting}
           />
-          <button onClick={() => mutate({ content: input })}>Post</button>
+          {!isPosting && input != "" && (
+            <button onClick={() => mutate({ content: input })}>Post</button>
+          )}
+          {isPosting && (
+            <div className="flex items-center justify-center">
+              <Spinner size={20} />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -70,9 +94,9 @@ const PostView = (props: PostWithUser) => {
       />
       <div className="flex flex-col">
         <div className="flex text-slate-500">
-          <span className="font-semibold">{`@${author.id}`}</span>
+          <Link href={`/${author.id}`}><span className="font-semibold">{`@${author.id}`}</span></Link>
           <span className="px-2">·</span>
-          <span className="font-light">{`${dayjs(post.createdAt).fromNow()}`}</span>
+         <Link href={`/post/${post.id}`}><span className="font-light">{`${dayjs(post.createdAt).fromNow()}`}</span></Link>
         </div>
         <span>{post.content}</span>
       </div>
