@@ -95,6 +95,8 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
     });
   }
 
+  // TODO: make sure the provided userId is valid and not banned.
+
   return next({
     ctx: {
       userId: ctx.userId,

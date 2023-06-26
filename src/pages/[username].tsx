@@ -1,11 +1,16 @@
-import { type NextPage } from "next";
+import { GetServerSideProps, GetStaticProps, type NextPage } from "next";
 import Head from "next/head";
 import { api } from "~/utils/api";
 
-const ProfilePage: NextPage = () => {
+const ProfilePage: NextPage<{ trpcState: any; username: string }> = ({
+  trpcState,
+  username,
+}) => {
   const { data, isLoading } = api.profile.getUserByUsername.useQuery({
-    id: "user_2OJ1zMRQmoMt8g2CPODk1inQ3Ka",
+    id: username,
   });
+
+  console.log("trpcState: ", trpcState);
 
   if (isLoading) return <div>Loading...</div>;
 
@@ -22,5 +27,47 @@ const ProfilePage: NextPage = () => {
     </>
   );
 };
+
+import { createServerSideHelpers } from "@trpc/react-query/server";
+import { prisma } from "~/server/db";
+import { appRouter } from "~/server/api/root";
+import superjson from "superjson";
+import { getAuth } from "@clerk/nextjs/server";
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  console.log("context:", context);
+
+  const { req } = context;
+  const sesh = getAuth(req);
+  const userId = sesh.userId;
+  console.log(userId);
+
+  const ssg = createServerSideHelpers({
+    router: appRouter,
+    ctx: { prisma, userId },
+    transformer: superjson,
+  });
+
+  const slug = context.params?.username;
+
+  if (typeof slug !== "string") throw new Error("no slug");
+
+  const username = slug.replace("@", "");
+  await ssg.profile.getUserByUsername.prefetch({ id: username });
+
+  return {
+    props: {
+      trpcState: ssg.dehydrate(),
+      username: username,
+    },
+  };
+};
+
+// export const getStaticPaths = () => {
+//   return {
+//     paths: [],
+//     fallback: "blocking",
+//   };
+// };
 
 export default ProfilePage;
