@@ -10,8 +10,6 @@ const ProfilePage: NextPage<{ trpcState: any; username: string }> = ({
     id: username,
   });
 
-  console.log("trpcState: ", trpcState);
-
   if (isLoading) return <div>Loading...</div>;
 
   if (!data) return <div>Something went wrong...</div>;
@@ -19,7 +17,7 @@ const ProfilePage: NextPage<{ trpcState: any; username: string }> = ({
   return (
     <>
       <Head>
-        <title>Profile</title>
+        <title>{username}</title>
       </Head>
       <main className="flex h-screen justify-center">
         <div>{data.id}</div>
@@ -35,14 +33,11 @@ import superjson from "superjson";
 import { getAuth } from "@clerk/nextjs/server";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log("context:", context);
-
   const { req } = context;
   const sesh = getAuth(req);
   const userId = sesh.userId;
-  console.log(userId);
 
-  const ssg = createServerSideHelpers({
+  const serverSideHelper = createServerSideHelpers({
     router: appRouter,
     ctx: { prisma, userId },
     transformer: superjson,
@@ -53,21 +48,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   if (typeof slug !== "string") throw new Error("no slug");
 
   const username = slug.replace("@", "");
-  await ssg.profile.getUserByUsername.prefetch({ id: username });
+  await serverSideHelper.profile.getUserByUsername.prefetch({ id: username });
 
   return {
     props: {
-      trpcState: ssg.dehydrate(),
-      username: username,
+      trpcState: serverSideHelper.dehydrate(),
+      username,
     },
   };
 };
-
-// export const getStaticPaths = () => {
-//   return {
-//     paths: [],
-//     fallback: "blocking",
-//   };
-// };
 
 export default ProfilePage;
